@@ -6,24 +6,13 @@ on:
       run_tests:
         description: 'Run tests'
         required: false
-        default: 'true'
+        default: 'false'
         type: boolean
       clean_build:
         description: 'Clean build folder before building'
         required: false
         default: 'false'
         type: boolean
-      destination:
-        description: 'Build destination'
-        required: false
-        default: 'platform=iOS Simulator,name=iPhone 15'
-        type: choice
-        options:
-          - 'platform=iOS Simulator,name=iPhone 15'
-          - 'platform=iOS Simulator,name=iPhone 15 Pro'
-          - 'platform=iOS Simulator,name=iPhone 14'
-          - 'platform=iOS Simulator,name=iPhone SE (3rd generation)'
-          - 'platform=iOS Simulator,name=iPad Pro (12.9-inch) (6th generation)'
 
 jobs:
   build-and-test:
@@ -59,11 +48,11 @@ jobs:
           xcodebuild build \
             -project Sonexa.xcodeproj \
             -scheme Sonexa \
-            -destination '${{ inputs.destination }}' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            -destination 'generic/platform=iOS' \
             | tee build.log
       - name: Upload Build Log
         if: always()
@@ -79,7 +68,7 @@ jobs:
           xcodebuild test \
             -project Sonexa.xcodeproj \
             -scheme Sonexa \
-            -destination '${{ inputs.destination }}' \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -152,6 +141,5 @@ jobs:
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Destination**: ${{ inputs.destination }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tests Run**: ${{ inputs.run_tests }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Clean Build**: ${{ inputs.clean_build }}" >> $GITHUB_STEP_SUMMARY
