@@ -187,6 +187,7 @@ struct LibraryView: View {
                             .onTapGesture {
                                 playbackEngine.playTrack(track)
                             }
+                    }
                 }
             }
         }

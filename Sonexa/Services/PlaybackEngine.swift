@@ -86,7 +86,9 @@ class PlaybackEngine: ObservableObject {
             forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
             queue: .main
         ) { [weak self] time in
-            self?.currentTime = time.seconds
+            Task { @MainActor in
+                self?.currentTime = time.seconds
+            }
         }
         
         setupAudioSession()
@@ -101,7 +103,9 @@ class PlaybackEngine: ObservableObject {
             object: playerItem,
             queue: .main
         ) { [weak self] _ in
-            self?.handleTrackCompletion()
+            Task { @MainActor in
+                await self?.handleTrackCompletion()
+            }
         }
     }
     
@@ -218,7 +222,7 @@ class PlaybackEngine: ObservableObject {
     
     // MARK: - Private Methods
     
-    private func handleTrackCompletion() {
+    private func handleTrackCompletion() async {
         switch repeatMode {
         case .one:
             if let currentTrack = currentTrack {

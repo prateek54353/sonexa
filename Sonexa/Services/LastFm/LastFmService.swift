@@ -162,32 +162,32 @@ class LastFmService {
         let descriptor = FetchDescriptor<PendingScrobble>()
         guard let pending = try? context.fetch(descriptor) else { return }
         
-        for scrobble in pending {
+        for pendingScrobble in pending {
             do {
-                let timestamp = scrobble.timestamp
+                let timestamp = pendingScrobble.timestamp
                 
                 // Create a temporary track for scrobbling
                 let tempTrack = Track(
-                    title: scrobble.trackTitle,
-                    artist: scrobble.artist,
-                    album: scrobble.album ?? "",
+                    title: pendingScrobble.trackTitle,
+                    artist: pendingScrobble.artist,
+                    album: pendingScrobble.album ?? "",
                     fileURL: "",
                     fileName: "",
                     fileSize: 0,
                     fileType: "",
-                    duration: scrobble.duration
+                    duration: pendingScrobble.duration
                 )
                 
-                try await scrobble(track: tempTrack, timestamp: timestamp)
+                try await self.scrobble(track: tempTrack, timestamp: timestamp)
                 
-                context.delete(scrobble)
+                context.delete(pendingScrobble)
                 try? context.save()
                 
             } catch {
-                scrobble.retryCount += 1
+                pendingScrobble.retryCount += 1
                 
-                if scrobble.retryCount > 5 {
-                    context.delete(scrobble)
+                if pendingScrobble.retryCount > 5 {
+                    context.delete(pendingScrobble)
                 }
                 
                 try? context.save()

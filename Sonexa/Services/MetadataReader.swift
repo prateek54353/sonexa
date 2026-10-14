@@ -38,39 +38,51 @@ class MetadataReader {
             guard let key = item.commonKey?.rawValue else { continue }
             
             switch key {
-            case AVMetadataCommonKey.title:
-                trackMetadata.title = item.stringValue
+            case "title":
+                if let value = try? await item.load(.stringValue) {
+                    trackMetadata.title = value
+                }
                 
-            case AVMetadataCommonKey.artist:
-                trackMetadata.artist = item.stringValue
+            case "artist":
+                if let value = try? await item.load(.stringValue) {
+                    trackMetadata.artist = value
+                }
                 
-            case AVMetadataCommonKey.albumName:
-                trackMetadata.album = item.stringValue
+            case "albumName":
+                if let value = try? await item.load(.stringValue) {
+                    trackMetadata.album = value
+                }
                 
-            case AVMetadataCommonKey.albumArtist:
-                trackMetadata.albumArtist = item.stringValue
+            case "albumArtist":
+                if let value = try? await item.load(.stringValue) {
+                    trackMetadata.albumArtist = value
+                }
                 
-            case AVMetadataCommonKey.trackNumber:
+            case "trackNumber":
                 if let value = item.numberValue {
                     trackMetadata.trackNumber = value.intValue
                 }
                 
-            case AVMetadataCommonKey.discNumber:
+            case "discNumber":
                 if let value = item.numberValue {
                     trackMetadata.discNumber = value.intValue
                 }
                 
-            case AVMetadataCommonKey.genre:
-                trackMetadata.genre = item.stringValue
+            case "genre":
+                if let value = try? await item.load(.stringValue) {
+                    trackMetadata.genre = value
+                }
                 
-            case AVMetadataCommonKey.creationDate:
-                if let dateString = item.stringValue,
+            case "creationDate":
+                if let dateString = try? await item.load(.stringValue),
                    let date = ISO8601DateFormatter().date(from: dateString) {
                     trackMetadata.year = Calendar.current.component(.year, from: date)
                 }
                 
-            case AVMetadataCommonKey.creator:
-                trackMetadata.composer = item.stringValue
+            case "creator":
+                if let value = try? await item.load(.stringValue) {
+                    trackMetadata.composer = value
+                }
                 
             default:
                 break
@@ -80,13 +92,17 @@ class MetadataReader {
         // Extract artwork
         let artworkItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: AVMetadataIdentifier.commonIdentifierArtwork)
         if let artworkItem = artworkItems.first,
-           let artworkData = artworkItem.dataValue {
+           let artworkData = try? await artworkItem.load(.dataValue) {
             trackMetadata.artwork = artworkData
             trackMetadata.hasEmbeddedArtwork = true
         }
         
-        // Extract lyrics (embedded)
-        let lyricsItems = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: AVMetadataIdentifier.id3MetadataLyrics)
+        // Extract lyrics (embedded) - use robust filter
+        let lyricsItems = metadata.filter { item in
+            if let id = item.identifier?.rawValue.lowercased(), id.contains("lyrics") { return true }
+            if item.keySpace == .id3, let key = item.key as? String, key.lowercased() == "uslt" { return true }
+            return false
+        }
         if !lyricsItems.isEmpty {
             trackMetadata.hasEmbeddedLyrics = true
         }
