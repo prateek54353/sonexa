@@ -1,40 +1,17 @@
-name: Build and Test Sonexa
+name: Build Unsigned IPA
 
 on:
   workflow_dispatch:
-    inputs:
-      clean_build:
-        description: 'Clean build folder before building'
-        required: false
-        default: 'false'
-        type: boolean
 
 jobs:
-  build-and-test:
+  build:
     runs-on: macos-14
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      - name: Select Xcode Version
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app
-          xcodebuild -version
-      
-      - name: Show Build Environment
-        run: |
-          echo "Xcode Version:"
-          xcodebuild -version
-          echo ""
-          echo "Available Simulators:"
-          xcrun simctl list devices available
-          echo ""
-          echo "Swift Version:"
-          swift --version
-      
-      - name: Clean Build Folder (if requested)
-        if: ${{ inputs.clean_build == 'true' }}
+      - name: Clean Build
         run: |
           xcodebuild clean -project Sonexa.xcodeproj -scheme Sonexa
       
@@ -47,18 +24,9 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            -destination 'generic/platform=iOS' \
-            | tee build.log
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Build-Log
-          path: build.log
-          retention-days: 3
+            -destination 'generic/platform=iOS'
       
-      - name: Archive Build (if successful)
-        if: success()
+      - name: Archive Build
         run: |
           xcodebuild archive \
             -project Sonexa.xcodeproj \
@@ -71,9 +39,7 @@ jobs:
             -destination 'generic/platform=iOS'
       
       - name: Export IPA
-        if: success()
         run: |
-          # Create export options plist for unsigned app
           cat > ExportOptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -81,17 +47,9 @@ jobs:
           <dict>
               <key>method</key>
               <string>development</string>
-              <key>teamID</key>
-              <string></string>
               <key>signingStyle</key>
               <string>manual</string>
-              <key>signingCertificate</key>
-              <string></string>
-              <key>provisioningProfiles</key>
-              <dict></dict>
               <key>compileBitcode</key>
-              <false/>
-              <key>uploadSymbols</key>
               <false/>
           </dict>
           </plist>
@@ -103,25 +61,8 @@ jobs:
             -exportOptionsPlist ExportOptions.plist
       
       - name: Upload IPA
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Sonexa-IPA
           path: Export/*.ipa
           retention-days: 7
-      
-      - name: Upload Build Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Build-Logs
-          path: ~/Library/Logs/DiagnosticReports/
-          retention-days: 3
-      
-      - name: Build Summary
-        if: always()
-        run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Clean Build**: ${{ inputs.clean_build }}" >> $GITHUB_STEP_SUMMARY
