@@ -1,46 +1,24 @@
-name: Build Unsigned IPA
+name: Build IPA
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Clean Build
-        run: |
-          xcodebuild clean -project Sonexa.xcodeproj -scheme Sonexa
+      - name: Build
+        run: xcodebuild -project Sonexa.xcodeproj -scheme Sonexa -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO -destination generic/platform=iOS
       
-      - name: Build Project
-        run: |
-          xcodebuild build \
-            -project Sonexa.xcodeproj \
-            -scheme Sonexa \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            -destination 'generic/platform=iOS'
+      - name: Archive
+        run: xcodebuild archive -project Sonexa.xcodeproj -scheme Sonexa -archivePath Sonexa.xcarchive -configuration Debug CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO -destination generic/platform=iOS
       
-      - name: Archive Build
+      - name: Export
         run: |
-          xcodebuild archive \
-            -project Sonexa.xcodeproj \
-            -scheme Sonexa \
-            -archivePath Sonexa.xcarchive \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            -destination 'generic/platform=iOS'
-      
-      - name: Export IPA
-        run: |
-          cat > ExportOptions.plist <<EOF
+          cat > ExportOptions.plist <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -49,20 +27,12 @@ jobs:
               <string>development</string>
               <key>signingStyle</key>
               <string>manual</string>
-              <key>compileBitcode</key>
-              <false/>
           </dict>
           </plist>
           EOF
-          
-          xcodebuild -exportArchive \
-            -archivePath Sonexa.xcarchive \
-            -exportPath Export \
-            -exportOptionsPlist ExportOptions.plist
+          xcodebuild -exportArchive -archivePath Sonexa.xcarchive -exportPath Export -exportOptionsPlist ExportOptions.plist
       
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Sonexa-IPA
           path: Export/*.ipa
-          retention-days: 7
