@@ -147,7 +147,7 @@ class AnimatedArtworkService {
             object: playerItem,
             queue: .main
         ) { _ in
-            playerItem.seek(to: .zero)
+            playerItem.seek(to: .zero) { _ in }
             player.play()
         }
         

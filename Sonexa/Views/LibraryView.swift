@@ -85,7 +85,7 @@ struct LibraryView: View {
     private var songsSection: some View {
         let filteredTracks = filteredAndSortedTracks()
         
-        Group {
+        return Group {
             if filteredTracks.isEmpty {
                 emptyView(message: "No songs found")
             } else {
@@ -109,7 +109,7 @@ struct LibraryView: View {
             album.artist.localizedCaseInsensitiveContains(searchText)
         }
         
-        Group {
+        return Group {
             if filteredAlbums.isEmpty {
                 emptyView(message: "No albums found")
             } else {
@@ -132,7 +132,7 @@ struct LibraryView: View {
             artist.name.localizedCaseInsensitiveContains(searchText)
         }
         
-        Group {
+        return Group {
             if filteredArtists.isEmpty {
                 emptyView(message: "No artists found")
             } else {
@@ -155,7 +155,7 @@ struct LibraryView: View {
             playlist.name.localizedCaseInsensitiveContains(searchText)
         }
         
-        Group {
+        return Group {
             if filteredPlaylists.isEmpty {
                 emptyView(message: "No playlists found")
             } else {
@@ -176,7 +176,7 @@ struct LibraryView: View {
             track.artist.localizedCaseInsensitiveContains(searchText)
         }
         
-        Group {
+        return Group {
             if filteredFavourites.isEmpty {
                 emptyView(message: "No favourites found")
             } else {

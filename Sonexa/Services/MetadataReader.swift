@@ -59,12 +59,12 @@ class MetadataReader {
                 }
                 
             case "trackNumber":
-                if let value = item.numberValue {
+                if let value = try? await item.load(.numberValue) {
                     trackMetadata.trackNumber = value.intValue
                 }
                 
             case "discNumber":
-                if let value = item.numberValue {
+                if let value = try? await item.load(.numberValue) {
                     trackMetadata.discNumber = value.intValue
                 }
                 
@@ -112,7 +112,7 @@ class MetadataReader {
             let formatDescriptions = try await audioTrack.load(.formatDescriptions)
             
             if let formatDescription = formatDescriptions.first {
-                let audioStreamBasicDescription = formatDescription.formatDescription?.audioStreamBasicDescription
+                let audioStreamBasicDescription = formatDescription.audioStreamBasicDescription
                 
                 if let asbd = audioStreamBasicDescription {
                     trackMetadata.sampleRate = Int(asbd.mSampleRate)
