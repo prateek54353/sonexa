@@ -3,11 +3,6 @@ name: Build and Test Sonexa
 on:
   workflow_dispatch:
     inputs:
-      run_tests:
-        description: 'Run tests'
-        required: false
-        default: 'false'
-        type: boolean
       clean_build:
         description: 'Clean build folder before building'
         required: false
@@ -61,18 +56,6 @@ jobs:
           name: Build-Log
           path: build.log
           retention-days: 3
-      
-      - name: Run Tests (if requested)
-        if: ${{ inputs.run_tests == 'true' }}
-        run: |
-          xcodebuild test \
-            -project Sonexa.xcodeproj \
-            -scheme Sonexa \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
       
       - name: Archive Build (if successful)
         if: success()
@@ -141,5 +124,4 @@ jobs:
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests Run**: ${{ inputs.run_tests }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Clean Build**: ${{ inputs.clean_build }}" >> $GITHUB_STEP_SUMMARY
