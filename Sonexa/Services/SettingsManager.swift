@@ -182,7 +182,12 @@ class SettingsManager: ObservableObject {
         defer { url.stopAccessingSecurityScopedResource() }
         
         do {
-            let bookmark = try url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])
+            #if os(macOS)
+let bookmark = try url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])
+#else
+// iOS/tvOS/watchOS: security scoped bookmark options aren't available — create a plain bookmark or handle differently
+let bookmark = try url.bookmarkData()
+#endif
             preferences?.autoImportFolderBookmark = bookmark
             savePreferences()
         } catch {
@@ -200,8 +205,12 @@ class SettingsManager: ObservableObject {
         
         var isStale = false
         do {
-            let url = try URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
             
+            #if os(macOS)
+let url = try URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
+#else
+let url = try URL(resolvingBookmarkData: bookmark, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
+#endif
             if isStale {
                 // Bookmark is stale, need to re-select
                 clearAutoImportFolder()
