@@ -8,6 +8,7 @@ struct NowPlayingView: View {
     @State private var showLyrics: Bool = false
     @State private var showQueue: Bool = false
     @State private var showSettings: Bool = false
+    @State private var showAudioSettings: Bool = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -173,7 +174,7 @@ struct NowPlayingView: View {
                                 }
                                 
                                 Button(action: {
-                                    // TODO: Show audio settings
+                                    showAudioSettings = true
                                 }) {
                                     Image(systemName: "slider.horizontal.3")
                                         .font(.system(size: 24))
@@ -194,6 +195,9 @@ struct NowPlayingView: View {
             }
             .sheet(isPresented: $showSettings) {
                 TrackSettingsView()
+            }
+            .sheet(isPresented: $showAudioSettings) {
+                AudioSettingsView()
             }
         }
     }
@@ -344,6 +348,8 @@ struct QueueView: View {
 
 struct TrackSettingsView: View {
     @EnvironmentObject var playbackEngine: PlaybackEngine
+    @EnvironmentObject var libraryManager: LibraryManager
+    @State private var showingPlaylistPicker = false
     
     var body: some View {
         NavigationStack {
@@ -387,7 +393,7 @@ struct TrackSettingsView: View {
                         }
                         
                         Button("Add to Playlist") {
-                            // TODO: Show playlist selection
+                            showingPlaylistPicker = true
                         }
                     }
                 }
@@ -395,6 +401,98 @@ struct TrackSettingsView: View {
             .navigationTitle("Track Settings")
             .background(Colors.background)
             .scrollContentBackground(.hidden)
+            .sheet(isPresented: $showingPlaylistPicker) {
+                if let track = playbackEngine.currentTrack {
+                    AddTrackToPlaylistView(track: track)
+                }
+            }
+        }
+    }
+}
+
+private struct AddTrackToPlaylistView: View {
+    let track: Track
+    @EnvironmentObject private var libraryManager: LibraryManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingCreatePlaylist = false
+    @State private var playlistName = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if libraryManager.playlists.isEmpty {
+                    Text("Create a playlist to add this song.")
+                        .foregroundColor(Colors.secondaryText)
+                }
+                ForEach(libraryManager.playlists) { playlist in
+                    Button {
+                        libraryManager.addTrackToPlaylist(track, playlist: playlist)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(playlist.name).foregroundColor(Colors.primaryText)
+                                Text("\(playlist.trackCount) tracks").font(Typography.caption1).foregroundColor(Colors.secondaryText)
+                            }
+                            Spacer()
+                            Image(systemName: "plus").foregroundColor(Colors.accent)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Add to Playlist")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("New Playlist") { showingCreatePlaylist = true }
+                }
+            }
+            .alert("New Playlist", isPresented: $showingCreatePlaylist) {
+                TextField("Playlist name", text: $playlistName)
+                Button("Cancel", role: .cancel) { playlistName = "" }
+                Button("Create") {
+                    let name = playlistName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !name.isEmpty else { return }
+                    let playlist = libraryManager.createPlaylist(name: name)
+                    libraryManager.addTrackToPlaylist(track, playlist: playlist)
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+struct AudioSettingsView: View {
+    @EnvironmentObject private var playbackEngine: PlaybackEngine
+    @EnvironmentObject private var settingsManager: SettingsManager
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Playback Speed") {
+                    Slider(value: Binding(
+                        get: { Double(playbackEngine.playbackRate) },
+                        set: { playbackEngine.setPlaybackRate(Float($0)) }
+                    ), in: 0.5...2.0, step: 0.05)
+                    Text(String(format: "%.2g×", playbackEngine.playbackRate))
+                        .foregroundColor(Colors.secondaryText)
+                }
+                Section("Interaction") {
+                    Toggle("Haptics", isOn: Binding(
+                        get: { settingsManager.hapticsEnabled },
+                        set: { settingsManager.setHapticsEnabled($0) }
+                    ))
+                }
+                Section {
+                    Text("Equalizer and spatial audio controls are not available in this player yet.")
+                        .font(Typography.caption1)
+                        .foregroundColor(Colors.secondaryText)
+                }
+            }
+            .navigationTitle("Audio Settings")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

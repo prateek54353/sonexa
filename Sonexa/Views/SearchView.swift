@@ -6,6 +6,7 @@ struct SearchView: View {
     
     @State private var searchText = ""
     @State private var selectedScope: SearchScope = .all
+    @State private var recentSearches = UserDefaults.standard.stringArray(forKey: "recentSearches") ?? []
     
     enum SearchScope: String, CaseIterable {
         case all = "All"
@@ -45,6 +46,16 @@ struct SearchView: View {
             }
             .navigationTitle("Search")
             .background(Colors.background)
+            .task(id: searchText) {
+                try? await Task.sleep(for: .milliseconds(800))
+                guard !Task.isCancelled else { return }
+                let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !query.isEmpty else { return }
+                recentSearches.removeAll { $0.caseInsensitiveCompare(query) == .orderedSame }
+                recentSearches.insert(query, at: 0)
+                recentSearches = Array(recentSearches.prefix(10))
+                UserDefaults.standard.set(recentSearches, forKey: "recentSearches")
+            }
         }
     }
     
@@ -55,11 +66,26 @@ struct SearchView: View {
                 .foregroundColor(Colors.primaryText)
                 .padding(.horizontal, Spacing.lg)
             
-            // TODO: Implement recent searches history
-            Text("No recent searches")
-                .font(Typography.body)
-                .foregroundColor(Colors.secondaryText)
+            if recentSearches.isEmpty {
+                Text("No recent searches")
+                    .font(Typography.body)
+                    .foregroundColor(Colors.secondaryText)
+                    .padding(.horizontal, Spacing.lg)
+            } else {
+                ForEach(recentSearches, id: \.self) { query in
+                    Button { searchText = query } label: {
+                        Label(query, systemImage: "clock")
+                            .foregroundColor(Colors.primaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, Spacing.lg)
+                }
+                Button("Clear Recent Searches", role: .destructive) {
+                    recentSearches.removeAll()
+                    UserDefaults.standard.removeObject(forKey: "recentSearches")
+                }
                 .padding(.horizontal, Spacing.lg)
+            }
         }
         .padding(.top, Spacing.lg)
     }

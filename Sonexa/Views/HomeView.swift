@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var libraryManager: LibraryManager
     @EnvironmentObject var playbackEngine: PlaybackEngine
+    @State private var isImporting: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -37,6 +38,30 @@ struct HomeView: View {
             }
             .navigationTitle("Sonexa")
             .background(Colors.background)
+            .fileImporter(
+                isPresented: $isImporting,
+                allowedContentTypes: [
+                    .mp3,
+                    .mpeg4Audio,
+                    .wav,
+                    .aiff,
+                    .audio
+                ],
+                allowsMultipleSelection: true
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    Task {
+                        do {
+                            try await libraryManager.importFiles(urls: urls)
+                        } catch {
+                            print("Import failed: \(error)")
+                        }
+                    }
+                case .failure(let error):
+                    print("File picker failed: \(error)")
+                }
+            }
         }
     }
     
@@ -120,7 +145,7 @@ struct HomeView: View {
                 .multilineTextAlignment(.center)
             
             Button(action: {
-                // TODO: Open file picker
+                isImporting = true
             }) {
                 Text("Import Music")
                     .font(Typography.headline)

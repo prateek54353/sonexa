@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import AVFoundation
 
 @MainActor
 class LyricsManager: ObservableObject {
@@ -49,8 +50,11 @@ class LyricsManager: ObservableObject {
         
         // Check for embedded lyrics
         if track.hasEmbeddedLyrics {
-            // TODO: Extract embedded lyrics from file
-            // For now, we'll skip and try online providers
+            if let embedded = await loadEmbeddedLyrics(for: track) {
+                cacheLyrics(embedded, for: track)
+                currentLyrics = embedded
+                return
+            }
         }
         
         // Try providers in order
@@ -103,6 +107,34 @@ class LyricsManager: ObservableObject {
         
         // No lyrics found
         errorMessage = "No lyrics found"
+    }
+
+    private func loadEmbeddedLyrics(for track: Track) async -> LyricsDocument? {
+        let url = URL(fileURLWithPath: track.fileURL)
+        let asset = AVURLAsset(url: url)
+        guard let metadata = try? await asset.load(.metadata) else { return nil }
+
+        for item in metadata {
+            let identifier = item.identifier?.rawValue.lowercased() ?? ""
+            let isLyrics = identifier.contains("lyrics") ||
+                (item.keySpace == .id3 && (item.key as? String)?.lowercased() == "uslt")
+            guard isLyrics else { continue }
+
+            let text = (try? await item.load(.stringValue)) ??
+                (try? await item.load(.dataValue)).flatMap { String(data: $0, encoding: .utf8) }
+            guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+
+            let document = LyricsDocument(
+                trackID: track.id,
+                lyrics: text,
+                type: .plain,
+                provider: "Embedded",
+                source: "Audio File"
+            )
+            document.track = track
+            return document
+        }
+        return nil
     }
     
     // MARK: - Caching

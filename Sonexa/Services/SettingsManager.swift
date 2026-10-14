@@ -153,4 +153,57 @@ class SettingsManager: ObservableObject {
         preferences?.sleepTimerEnabled = false
         savePreferences()
     }
+    
+    // MARK: - Auto-import Folder
+    
+    var autoImportFolderEnabled: Bool {
+        preferences?.autoImportFolderEnabled ?? false
+    }
+    
+    func setAutoImportFolderEnabled(_ enabled: Bool) {
+        preferences?.autoImportFolderEnabled = enabled
+        savePreferences()
+    }
+    
+    func setAutoImportFolder(url: URL) {
+        guard url.startAccessingSecurityScopedResource() else {
+            print("Failed to access security-scoped resource")
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        
+        do {
+            let bookmark = try url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])
+            preferences?.autoImportFolderBookmark = bookmark
+            savePreferences()
+        } catch {
+            print("Failed to create bookmark: \(error)")
+        }
+    }
+    
+    func clearAutoImportFolder() {
+        preferences?.autoImportFolderBookmark = nil
+        savePreferences()
+    }
+    
+    func getAutoImportFolderURL() -> URL? {
+        guard let bookmark = preferences?.autoImportFolderBookmark else { return nil }
+        
+        var isStale = false
+        do {
+            let url = try URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
+            
+            if isStale {
+                // Bookmark is stale, need to re-select
+                clearAutoImportFolder()
+                return nil
+            }
+            
+            return url
+        } catch {
+            print("Failed to resolve bookmark: \(error)")
+            clearAutoImportFolder()
+            return nil
+        }
+    }
 }

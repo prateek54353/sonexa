@@ -21,6 +21,8 @@ final class UserPreferences {
     var playbackSpeed: Double
     var equalizerEnabled: Bool
     var spatialAudioEnabled: Bool
+    var autoImportFolderEnabled: Bool
+    var autoImportFolderBookmark: Data?
     
     init() {
         self.id = UUID()
@@ -41,6 +43,8 @@ final class UserPreferences {
         self.playbackSpeed = 1.0
         self.equalizerEnabled = false
         self.spatialAudioEnabled = false
+        self.autoImportFolderEnabled = false
+        self.autoImportFolderBookmark = nil
     }
 }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var settingsManager: SettingsManager
     @EnvironmentObject var libraryManager: LibraryManager
+    @State private var isSelectingFolder: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -75,6 +76,24 @@ struct SettingsView: View {
                 
                 // Library
                 Section("Library") {
+                    Toggle("Auto-import from Folder", isOn: Binding(
+                        get: { settingsManager.autoImportFolderEnabled },
+                        set: { settingsManager.setAutoImportFolderEnabled($0) }
+                    ))
+                    
+                    if settingsManager.autoImportFolderEnabled {
+                        Button(settingsManager.autoImportFolderBookmark != nil ? "Change Folder" : "Select Folder") {
+                            isSelectingFolder = true
+                        }
+                        
+                        if settingsManager.autoImportFolderBookmark != nil {
+                            Button("Clear Folder") {
+                                settingsManager.clearAutoImportFolder()
+                            }
+                            .foregroundColor(Colors.error)
+                        }
+                    }
+                    
                     Button("Rescan Library") {
                         Task {
                             try? await libraryManager.rescanLibrary()
@@ -100,6 +119,20 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .background(Colors.background)
             .scrollContentBackground(.hidden)
+            .fileImporter(
+                isPresented: $isSelectingFolder,
+                allowedContentTypes: [.folder],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    if let url = urls.first {
+                        settingsManager.setAutoImportFolder(url: url)
+                    }
+                case .failure(let error):
+                    print("Folder selection failed: \(error)")
+                }
+            }
         }
     }
 }

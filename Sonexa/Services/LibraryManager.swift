@@ -267,6 +267,41 @@ class LibraryManager: ObservableObject {
         try await importFiles(urls: fileURLs)
     }
     
+    func importFromAutoImportFolder() async throws {
+        guard let settingsManager = SettingsManager.shared,
+              settingsManager.autoImportFolderEnabled,
+              let folderURL = settingsManager.getAutoImportFolderURL() else {
+            return
+        }
+        
+        guard folderURL.startAccessingSecurityScopedResource() else {
+            print("Failed to access auto-import folder")
+            return
+        }
+        defer { folderURL.stopAccessingSecurityScopedResource() }
+        
+        // Find all audio files in the folder
+        let audioExtensions = ["mp3", "m4a", "wav", "aiff", "flac", "aac"]
+        var audioURLs: [URL] = []
+        
+        if let enumerator = FileManager.default.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) {
+            for case let fileURL as URL in enumerator {
+                guard let resourceValues = try? fileURL.resourceValues(forKeys: [.isDirectoryKey]),
+                      !resourceValues.isDirectory! else {
+                    continue
+                }
+                
+                if audioExtensions.contains(fileURL.pathExtension.lowercased()) {
+                    audioURLs.append(fileURL)
+                }
+            }
+        }
+        
+        if !audioURLs.isEmpty {
+            try await importFiles(urls: audioURLs)
+        }
+    }
+    
     func clearLibrary() {
         guard let context = modelContext else { return }
         
