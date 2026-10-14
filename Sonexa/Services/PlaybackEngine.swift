@@ -240,7 +240,7 @@ class PlaybackEngine: ObservableObject {
     private func setupAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .defaultPlayback)
+            try audioSession.setCategory(.playback)
             try audioSession.setActive(true)
         } catch {
             print("Failed to setup audio session: \(error)")

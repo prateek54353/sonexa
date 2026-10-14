@@ -85,16 +85,18 @@ struct LibraryView: View {
     private var songsSection: some View {
         let filteredTracks = filteredAndSortedTracks()
         
-        if filteredTracks.isEmpty {
-            emptyView(message: "No songs found")
-        } else {
-            LazyVStack(spacing: 0) {
-                ForEach(filteredTracks) { track in
-                    TrackRow(track: track)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            playbackEngine.playTrack(track)
-                        }
+        Group {
+            if filteredTracks.isEmpty {
+                emptyView(message: "No songs found")
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(filteredTracks) { track in
+                        TrackRow(track: track)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                playbackEngine.playTrack(track)
+                            }
+                    }
                 }
             }
         }
@@ -107,18 +109,20 @@ struct LibraryView: View {
             album.artist.localizedCaseInsensitiveContains(searchText)
         }
         
-        if filteredAlbums.isEmpty {
-            emptyView(message: "No albums found")
-        } else {
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: Spacing.lg) {
-                ForEach(filteredAlbums) { album in
-                    AlbumCard(album: album)
+        Group {
+            if filteredAlbums.isEmpty {
+                emptyView(message: "No albums found")
+            } else {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: Spacing.lg) {
+                    ForEach(filteredAlbums) { album in
+                        AlbumCard(album: album)
+                    }
                 }
+                .padding(Spacing.lg)
             }
-            .padding(Spacing.lg)
         }
     }
     
@@ -128,18 +132,20 @@ struct LibraryView: View {
             artist.name.localizedCaseInsensitiveContains(searchText)
         }
         
-        if filteredArtists.isEmpty {
-            emptyView(message: "No artists found")
-        } else {
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: Spacing.lg) {
-                ForEach(filteredArtists) { artist in
-                    ArtistCard(artist: artist)
+        Group {
+            if filteredArtists.isEmpty {
+                emptyView(message: "No artists found")
+            } else {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: Spacing.lg) {
+                    ForEach(filteredArtists) { artist in
+                        ArtistCard(artist: artist)
+                    }
                 }
+                .padding(Spacing.lg)
             }
-            .padding(Spacing.lg)
         }
     }
     
@@ -149,15 +155,17 @@ struct LibraryView: View {
             playlist.name.localizedCaseInsensitiveContains(searchText)
         }
         
-        if filteredPlaylists.isEmpty {
-            emptyView(message: "No playlists found")
-        } else {
-            LazyVStack(spacing: Spacing.md) {
-                ForEach(filteredPlaylists) { playlist in
-                    PlaylistRow(playlist: playlist)
+        Group {
+            if filteredPlaylists.isEmpty {
+                emptyView(message: "No playlists found")
+            } else {
+                LazyVStack(spacing: Spacing.md) {
+                    ForEach(filteredPlaylists) { playlist in
+                        PlaylistRow(playlist: playlist)
+                    }
                 }
+                .padding(Spacing.lg)
             }
-            .padding(Spacing.lg)
         }
     }
     
@@ -168,16 +176,17 @@ struct LibraryView: View {
             track.artist.localizedCaseInsensitiveContains(searchText)
         }
         
-        if filteredFavourites.isEmpty {
-            emptyView(message: "No favourites found")
-        } else {
-            LazyVStack(spacing: 0) {
-                ForEach(filteredFavourites) { track in
-                    TrackRow(track: track)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            playbackEngine.playTrack(track)
-                        }
+        Group {
+            if filteredFavourites.isEmpty {
+                emptyView(message: "No favourites found")
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(filteredFavourites) { track in
+                        TrackRow(track: track)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                playbackEngine.playTrack(track)
+                            }
                 }
             }
         }

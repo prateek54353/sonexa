@@ -134,13 +134,10 @@ class LibraryManager: ObservableObject {
     }
     
     private func updateOrCreateAlbum(for track: Track, context: ModelContext) -> Album? {
-        let descriptor = FetchDescriptor<Album>(
-            predicate: #Predicate<Album> { album in
-                album.name == track.album && album.artist == track.artist
-            }
-        )
+        let descriptor = FetchDescriptor<Album>()
+        let albums = (try? context.fetch(descriptor)) ?? []
         
-        if let existingAlbum = try? context.fetch(descriptor).first {
+        if let existingAlbum = albums.first(where: { $0.name == track.album && $0.artist == track.artist }) {
             if !existingAlbum.tracks.contains(where: { $0.id == track.id }) {
                 existingAlbum.tracks.append(track)
             }
@@ -154,13 +151,10 @@ class LibraryManager: ObservableObject {
     }
     
     private func updateOrCreateArtist(for track: Track, context: ModelContext) -> Artist? {
-        let descriptor = FetchDescriptor<Artist>(
-            predicate: #Predicate<Artist> { artist in
-                artist.name == track.artist
-            }
-        )
+        let descriptor = FetchDescriptor<Artist>()
+        let artists = (try? context.fetch(descriptor)) ?? []
         
-        if let existingArtist = try? context.fetch(descriptor).first {
+        if let existingArtist = artists.first(where: { $0.name == track.artist }) {
             if !existingArtist.tracks.contains(where: { $0.id == track.id }) {
                 existingArtist.tracks.append(track)
             }

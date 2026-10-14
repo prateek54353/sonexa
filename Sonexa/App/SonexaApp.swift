@@ -35,7 +35,7 @@ struct SonexaApp: App {
     }
     
     private func setupRemoteCommandCenter() {
-        let commandCenter = MPRemoteCommandCenter.shared
+        let commandCenter = MPRemoteCommandCenter.shared()
         
         commandCenter.playCommand.addTarget { [weak playbackEngine] event in
             playbackEngine?.play()

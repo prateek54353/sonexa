@@ -110,13 +110,10 @@ class LyricsManager: ObservableObject {
     private func loadCachedLyrics(for track: Track) -> LyricsDocument? {
         guard let context = modelContext else { return nil }
         
-        let descriptor = FetchDescriptor<LyricsDocument>(
-            predicate: #Predicate<LyricsDocument> { doc in
-                doc.trackID == track.id
-            }
-        )
+        let descriptor = FetchDescriptor<LyricsDocument>()
+        let lyrics = (try? context.fetch(descriptor)) ?? []
         
-        return try? context.fetch(descriptor).first
+        return lyrics.first { $0.trackID == track.id }
     }
     
     private func cacheLyrics(_ lyrics: LyricsDocument, for track: Track) {
@@ -196,13 +193,10 @@ class LyricsManager: ObservableObject {
         lyricsDocument.track = track
         
         // Delete existing user-edited lyrics
-        let descriptor = FetchDescriptor<LyricsDocument>(
-            predicate: #Predicate<LyricsDocument> { doc in
-                doc.trackID == track.id && doc.userEdited == true
-            }
-        )
+        let descriptor = FetchDescriptor<LyricsDocument>()
+        let lyrics = (try? context.fetch(descriptor)) ?? []
         
-        if let existing = try? context.fetch(descriptor).first {
+        if let existing = lyrics.first(where: { $0.trackID == track.id && $0.userEdited == true }) {
             context.delete(existing)
         }
         

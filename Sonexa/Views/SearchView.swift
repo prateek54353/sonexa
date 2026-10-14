@@ -70,11 +70,33 @@ struct SearchView: View {
             case .all:
                 allResults
             case .songs:
-                songResults
+                LazyVStack(spacing: 0) {
+                    ForEach(songResults) { track in
+                        TrackRow(track: track)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                playbackEngine.playTrack(track)
+                            }
+                    }
+                }
             case .albums:
-                albumResults
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: Spacing.lg) {
+                    ForEach(albumResults) { album in
+                        AlbumCard(album: album)
+                    }
+                }
             case .artists:
-                artistResults
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: Spacing.lg) {
+                    ForEach(artistResults) { artist in
+                        ArtistCard(artist: artist)
+                    }
+                }
             }
         }
         .padding(Spacing.lg)

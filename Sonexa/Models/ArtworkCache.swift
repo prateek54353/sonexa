@@ -36,6 +36,7 @@ final class ArtworkSearchResult {
     var portraitURL: String?
     var isAvailable: Bool
     var searchDate: Date
+    var expiryDate: Date?
     
     init(artist: String, album: String) {
         self.id = UUID()
