@@ -114,10 +114,8 @@ struct MetadataEditorView: View {
                 track.discNumber = Int(discNumber)
                 track.totalDiscs = Int(totalDiscs)
                 
-                // TODO: Write to file
-                // Note: AVFoundation does not support writing metadata directly
-                // This would require a third-party library or custom implementation
-                // For now, we'll save the changes to the database only
+                // AVFoundation does not support rewriting metadata in existing audio files.
+                // Sonexa stores these edits in its local library database.
                 
                 try modelContext.save()
                 

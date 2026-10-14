@@ -167,16 +167,16 @@ struct LyricsProviderSettingsView: View {
 
 struct LastFmLoginView: View {
     @EnvironmentObject var settingsManager: SettingsManager
-    @State private var username: String = ""
-    @State private var password: String = ""
+    @Environment(\.openURL) private var openURL
     @State private var isLoading: Bool = false
+    @State private var authorizationStarted: Bool = false
     @State private var errorMessage: String?
     
     var body: some View {
         Form {
             Section {
-                TextField("Username", text: $username)
-                SecureField("Password", text: $password)
+                Text("Connect Sonexa to Last.fm in your browser. After granting access, return here to finish connecting.")
+                    .foregroundColor(Colors.secondaryText)
             }
             
             if let errorMessage = errorMessage {
@@ -187,17 +187,21 @@ struct LastFmLoginView: View {
             }
             
             Section {
-                Button(action: {
-                    login()
-                }) {
+                Button {
+                    if authorizationStarted {
+                        finishAuthorization()
+                    } else {
+                        startAuthorization()
+                    }
+                } label: {
                     HStack {
                         if isLoading {
                             ProgressView()
                         }
-                        Text("Connect")
+                        Text(authorizationStarted ? "I Authorized Sonexa" : "Authorize with Last.fm")
                     }
                 }
-                .disabled(username.isEmpty || password.isEmpty || isLoading)
+                .disabled(isLoading)
             }
         }
         .navigationTitle("Connect Last.fm")
@@ -205,23 +209,39 @@ struct LastFmLoginView: View {
         .scrollContentBackground(.hidden)
     }
     
-    private func login() {
+    private func startAuthorization() {
         isLoading = true
         errorMessage = nil
-        
         Task {
             do {
-                let success = try await LastFmService.shared.authenticate(username: username, password: password)
-                
-                if success {
-                    // TODO: Get session key from service
-                    settingsManager.connectLastFm(username: username, sessionKey: "")
-                }
+                let url = try await LastFmService.shared.beginAuthentication()
+                authorizationStarted = true
+                openURL(url)
             } catch {
-                errorMessage = "Authentication failed"
+                errorMessage = message(for: error)
             }
-            
             isLoading = false
         }
+    }
+
+    private func finishAuthorization() {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                let session = try await LastFmService.shared.completeAuthentication()
+                settingsManager.connectLastFm(username: session.username, sessionKey: session.sessionKey)
+            } catch {
+                errorMessage = "Last.fm has not authorized the app yet. Complete the browser prompt and try again."
+            }
+            isLoading = false
+        }
+    }
+
+    private func message(for error: Error) -> String {
+        if case LastFmError.missingConfiguration = error {
+            return "Add LastFmAPIKey and LastFmSharedSecret to the app configuration before connecting."
+        }
+        return "Could not start Last.fm authorization."
     }
 }

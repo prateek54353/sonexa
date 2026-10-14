@@ -5,31 +5,44 @@ import SwiftData
 class LastFmService {
     static let shared = LastFmService()
     
-    private let apiKey = "YOUR_API_KEY" // Should be configured securely
-    private let sharedSecret = "YOUR_SHARED_SECRET" // Should be configured securely
+    private let apiKey = Bundle.main.object(forInfoDictionaryKey: "LastFmAPIKey") as? String ?? ""
+    private let sharedSecret = Bundle.main.object(forInfoDictionaryKey: "LastFmSharedSecret") as? String ?? ""
     private let baseURL = "https://ws.audioscrobbler.com/2.0/"
     
     private var sessionKey: String?
     private var username: String?
+    private var pendingAuthenticationToken: String?
     
     private init() {}
     
     // MARK: - Authentication
     
-    func authenticate(username: String, password: String) async throws -> Bool {
-        // Get auth token
+    struct Session {
+        let username: String
+        let sessionKey: String
+    }
+
+    func beginAuthentication() async throws -> URL {
+        try validateConfiguration()
         let token = try await getAuthToken()
-        
-        // Get session
+        pendingAuthenticationToken = token
+        guard let url = URL(string: "https://www.last.fm/api/auth/?api_key=\(apiKey)&token=\(token)") else {
+            throw LastFmError.invalidRequest
+        }
+        return url
+    }
+
+    func completeAuthentication() async throws -> Session {
+        try validateConfiguration()
+        guard let token = pendingAuthenticationToken else { throw LastFmError.webAuthRequired }
         let params = [
             "api_key": apiKey,
             "method": "auth.getSession",
-            "token": token,
-            "username": username
+            "token": token
         ]
         
         let signature = generateSignature(params)
-        let urlString = "\(baseURL)?method=auth.getSession&api_key=\(apiKey)&token=\(token)&username=\(username)&api_sig=\(signature)&format=json"
+        let urlString = "\(baseURL)?method=auth.getSession&api_key=\(apiKey)&token=\(token)&api_sig=\(signature)&format=json"
         
         guard let url = URL(string: urlString) else {
             throw LastFmError.invalidRequest
@@ -46,19 +59,37 @@ class LastFmService {
         
         self.sessionKey = key
         self.username = name
+        pendingAuthenticationToken = nil
         
-        return true
+        return Session(username: name, sessionKey: key)
     }
     
+    func sessionKeyValue() -> String? { sessionKey }
+
+    func restoreSession(username: String, sessionKey: String) {
+        self.username = username.isEmpty ? nil : username
+        self.sessionKey = sessionKey.isEmpty ? nil : sessionKey
+    }
+
     private func getAuthToken() async throws -> String {
-        let timestamp = String(Int(Date().timeIntervalSince1970))
-        let signature = md5(apiKey + sharedSecret + timestamp)
-        
-        let urlString = "https://www.last.fm/api/auth/?api_key=\(apiKey)&token=\(signature)&api_sig=\(signature)"
-        
-        // Note: This requires user interaction in a web view
-        // For now, we'll return a placeholder
-        throw LastFmError.webAuthRequired
+        let params = ["api_key": apiKey, "method": "auth.getToken"]
+        let signature = generateSignature(params)
+        let urlString = "\(baseURL)?method=auth.getToken&api_key=\(apiKey)&api_sig=\(signature)&format=json"
+        guard let url = URL(string: urlString) else { throw LastFmError.invalidRequest }
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard (response as? HTTPURLResponse)?.statusCode == 200,
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let token = payload["token"] as? String else {
+            throw LastFmError.authenticationFailed
+        }
+        return token
+    }
+
+    private func validateConfiguration() throws {
+        guard !apiKey.isEmpty,
+              !sharedSecret.isEmpty,
+              !apiKey.contains("$("),
+              !sharedSecret.contains("$(") else { throw LastFmError.missingConfiguration }
     }
     
     // MARK: - Now Playing
@@ -223,4 +254,5 @@ enum LastFmError: Error {
     case invalidRequest
     case requestFailed
     case rateLimited
+    case missingConfiguration
 }

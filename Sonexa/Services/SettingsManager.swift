@@ -25,6 +25,9 @@ class SettingsManager: ObservableObject {
         
         let credsDescriptor = FetchDescriptor<LastFmCredentials>()
         lastFmCredentials = (try? context.fetch(credsDescriptor).first) ?? LastFmCredentials()
+        if let credentials = lastFmCredentials, credentials.isConnected {
+            LastFmService.shared.restoreSession(username: credentials.username, sessionKey: credentials.sessionKey)
+        }
     }
     
     func savePreferences() {
@@ -122,6 +125,7 @@ class SettingsManager: ObservableObject {
         lastFmCredentials?.username = username
         lastFmCredentials?.sessionKey = sessionKey
         lastFmCredentials?.isConnected = true
+        LastFmService.shared.restoreSession(username: username, sessionKey: sessionKey)
         saveLastFmCredentials()
     }
     
@@ -129,6 +133,7 @@ class SettingsManager: ObservableObject {
         lastFmCredentials?.username = ""
         lastFmCredentials?.sessionKey = ""
         lastFmCredentials?.isConnected = false
+        LastFmService.shared.restoreSession(username: "", sessionKey: "")
         saveLastFmCredentials()
     }
     
@@ -158,6 +163,10 @@ class SettingsManager: ObservableObject {
     
     var autoImportFolderEnabled: Bool {
         preferences?.autoImportFolderEnabled ?? false
+    }
+
+    var autoImportFolderBookmark: Data? {
+        preferences?.autoImportFolderBookmark
     }
     
     func setAutoImportFolderEnabled(_ enabled: Bool) {
