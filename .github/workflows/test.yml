@@ -14,10 +14,6 @@ on:
           - 'platform=iOS Simulator,name=iPhone 14'
           - 'platform=iOS Simulator,name=iPhone SE (3rd generation)'
           - 'platform=iOS Simulator,name=iPad Pro (12.9-inch) (6th generation)'
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
 
 jobs:
   test:
