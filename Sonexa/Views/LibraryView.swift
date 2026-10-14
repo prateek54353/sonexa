@@ -27,7 +27,6 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Section Picker
                 Picker("Section", selection: $selectedSection) {
                     ForEach(LibrarySection.allCases, id: \.self) { section in
                         Text(section.rawValue).tag(section)
@@ -37,12 +36,10 @@ struct LibraryView: View {
                 .padding(.horizontal, Spacing.lg)
                 .padding(.top, Spacing.lg)
                 
-                // Search Bar
                 SearchBar(text: $searchText)
                     .padding(.horizontal, Spacing.lg)
                     .padding(.vertical, Spacing.md)
                 
-                // Content
                 ScrollView {
                     VStack(spacing: 0) {
                         switch selectedSection {
@@ -181,6 +178,7 @@ struct LibraryView: View {
                         .onTapGesture {
                             playbackEngine.playTrack(track)
                         }
+                }
             }
         }
     }
@@ -188,7 +186,6 @@ struct LibraryView: View {
     private func filteredAndSortedTracks() -> [Track] {
         var tracks = libraryManager.tracks
         
-        // Filter
         if !searchText.isEmpty {
             tracks = tracks.filter { track in
                 track.title.localizedCaseInsensitiveContains(searchText) ||
@@ -197,7 +194,6 @@ struct LibraryView: View {
             }
         }
         
-        // Sort
         switch sortOption {
         case .title:
             tracks.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
@@ -235,7 +231,6 @@ struct TrackRow: View {
     
     var body: some View {
         HStack(spacing: Spacing.md) {
-            // Album Art placeholder
             ZStack {
                 RoundedRectangle(cornerRadius: CornerRadius.sm)
                     .fill(Colors.tertiaryBackground)
