@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import MediaPlayer
 
 @main
 struct SonexaApp: App {
@@ -26,7 +27,7 @@ struct SonexaApp: App {
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .defaultPlayback)
+            try audioSession.setCategory(.playback)
             try audioSession.setActive(true)
         } catch {
             print("Failed to configure audio session: \(error)")
@@ -34,7 +35,7 @@ struct SonexaApp: App {
     }
     
     private func setupRemoteCommandCenter() {
-        let commandCenter = MPRemoteCommandCenter.shared()
+        let commandCenter = MPRemoteCommandCenter.shared
         
         commandCenter.playCommand.addTarget { [weak playbackEngine] event in
             playbackEngine?.play()

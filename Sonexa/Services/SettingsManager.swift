@@ -31,7 +31,7 @@ class SettingsManager: ObservableObject {
         guard let context = modelContext,
               let prefs = preferences else { return }
         
-        if try? context.fetch(FetchDescriptor<UserPreferences>()).first == nil {
+        if (try? context.fetch(FetchDescriptor<UserPreferences>()).first) == nil {
             context.insert(prefs)
         }
         
@@ -42,7 +42,7 @@ class SettingsManager: ObservableObject {
         guard let context = modelContext,
               let creds = lastFmCredentials else { return }
         
-        if try? context.fetch(FetchDescriptor<LastFmCredentials>()).first == nil {
+        if (try? context.fetch(FetchDescriptor<LastFmCredentials>()).first) == nil {
             context.insert(creds)
         }
         
