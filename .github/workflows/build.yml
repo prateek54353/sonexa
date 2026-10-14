@@ -1,0 +1,117 @@
+name: Build and Test Sonexa
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run tests'
+        required: false
+        default: 'true'
+        type: boolean
+      clean_build:
+        description: 'Clean build folder before building'
+        required: false
+        default: 'false'
+        type: boolean
+      destination:
+        description: 'Build destination'
+        required: false
+        default: 'platform=iOS Simulator,name=iPhone 15'
+        type: choice
+        options:
+          - 'platform=iOS Simulator,name=iPhone 15'
+          - 'platform=iOS Simulator,name=iPhone 15 Pro'
+          - 'platform=iOS Simulator,name=iPhone 14'
+          - 'platform=iOS Simulator,name=iPhone SE (3rd generation)'
+          - 'platform=iOS Simulator,name=iPad Pro (12.9-inch) (6th generation)'
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+      
+      - name: Show Build Environment
+        run: |
+          echo "Xcode Version:"
+          xcodebuild -version
+          echo ""
+          echo "Available Simulators:"
+          xcrun simctl list devices available
+          echo ""
+          echo "Swift Version:"
+          swift --version
+      
+      - name: Clean Build Folder (if requested)
+        if: ${{ inputs.clean_build == 'true' }}
+        run: |
+          xcodebuild clean -project Sonexa.xcodeproj -scheme Sonexa
+      
+      - name: Build Project
+        run: |
+          xcodebuild build \
+            -project Sonexa.xcodeproj \
+            -scheme Sonexa \
+            -destination '${{ inputs.destination }}' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
+      - name: Run Tests (if requested)
+        if: ${{ inputs.run_tests == 'true' }}
+        run: |
+          xcodebuild test \
+            -project Sonexa.xcodeproj \
+            -scheme Sonexa \
+            -destination '${{ inputs.destination }}' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
+      - name: Archive Build (if successful)
+        if: success()
+        run: |
+          xcodebuild archive \
+            -project Sonexa.xcodeproj \
+            -scheme Sonexa \
+            -archivePath Sonexa.xcarchive \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -destination 'generic/platform=iOS'
+      
+      - name: Upload Archive
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonexa-Archive
+          path: Sonexa.xcarchive
+          retention-days: 7
+      
+      - name: Upload Build Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Logs
+          path: ~/Library/Logs/DiagnosticReports/
+          retention-days: 3
+      
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Destination**: ${{ inputs.destination }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests Run**: ${{ inputs.run_tests }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Clean Build**: ${{ inputs.clean_build }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,59 @@
+name: Run Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Test destination'
+        required: false
+        default: 'platform=iOS Simulator,name=iPhone 15'
+        type: choice
+        options:
+          - 'platform=iOS Simulator,name=iPhone 15'
+          - 'platform=iOS Simulator,name=iPhone 15 Pro'
+          - 'platform=iOS Simulator,name=iPhone 14'
+          - 'platform=iOS Simulator,name=iPhone SE (3rd generation)'
+          - 'platform=iOS Simulator,name=iPad Pro (12.9-inch) (6th generation)'
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: macos-14
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+      
+      - name: Run Unit Tests
+        run: |
+          xcodebuild test \
+            -project Sonexa.xcodeproj \
+            -scheme Sonexa \
+            -destination '${{ inputs.destination }}' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}
+      
+      - name: Generate Test Report
+        if: always()
+        run: |
+          # Test results are available in the build output
+          echo "Test execution completed"
+      
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Destination**: ${{ inputs.destination }}" >> $GITHUB_STEP_SUMMARY
