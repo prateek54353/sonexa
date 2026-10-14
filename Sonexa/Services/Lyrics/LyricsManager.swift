@@ -120,8 +120,13 @@ class LyricsManager: ObservableObject {
                 (item.keySpace == .id3 && (item.key as? String)?.lowercased() == "uslt")
             guard isLyrics else { continue }
 
-            let text = (try? await item.load(.stringValue)) ??
-                (try? await item.load(.dataValue)).flatMap { String(data: $0, encoding: .utf8) }
+            var text: String?
+            if let stringValue = try? await item.load(.stringValue) {
+                text = stringValue
+            } else if let dataValue = try? await item.load(.dataValue) {
+                text = String(data: dataValue, encoding: .utf8)
+            }
+            
             guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
 
             let document = LyricsDocument(

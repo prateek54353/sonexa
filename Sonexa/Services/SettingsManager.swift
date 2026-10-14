@@ -182,7 +182,11 @@ class SettingsManager: ObservableObject {
         defer { url.stopAccessingSecurityScopedResource() }
         
         do {
+            #if os(macOS)
             let bookmark = try url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])
+            #else
+            let bookmark = try url.bookmarkData()
+            #endif
             preferences?.autoImportFolderBookmark = bookmark
             savePreferences()
         } catch {
@@ -200,7 +204,11 @@ class SettingsManager: ObservableObject {
         
         var isStale = false
         do {
+            #if os(macOS)
             let url = try URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
+            #else
+            let url = try URL(resolvingBookmarkData: bookmark, bookmarkDataIsStale: &isStale)
+            #endif
             
             if isStale {
                 // Bookmark is stale, need to re-select
